@@ -3,29 +3,59 @@ name: Build iPhone IPA
 on:
   workflow_dispatch:
   push:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: macos-latest
 
-    defaults:
-      run:
-        working-directory: LocalRapPlayer_V2
-
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Show uploaded files
+        run: |
+          echo "Repository files:"
+          find . -maxdepth 4 -type f | sort
+
+      - name: Find project.yml
+        shell: bash
+        run: |
+          SPEC=$(find "$GITHUB_WORKSPACE" -type f -name "project.yml" | head -n 1)
+
+          if [ -z "$SPEC" ]; then
+            echo "ERROR: project.yml not found"
+            exit 1
+          fi
+
+          PROJECT_DIR=$(dirname "$SPEC")
+
+          echo "Found project.yml:"
+          echo "$SPEC"
+
+          echo "Project directory:"
+          echo "$PROJECT_DIR"
+
+          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
 
       - name: Install XcodeGen
         run: brew install xcodegen
 
       - name: Generate Xcode project
-        run: xcodegen generate
+        shell: bash
+        run: |
+          cd "$PROJECT_DIR"
+          xcodegen generate
+          ls -la
 
       - name: Build unsigned iPhone app
+        shell: bash
         run: |
+          cd "$PROJECT_DIR"
+
           set -o pipefail
+
           xcodebuild \
             -project LocalRapPlayer.xcodeproj \
             -scheme LocalRapPlayer \
@@ -38,24 +68,41 @@ jobs:
             build | tee xcodebuild.log
 
       - name: Package unsigned IPA
+        shell: bash
         run: |
+          cd "$PROJECT_DIR"
+
           APP_PATH="build/Build/Products/Release-iphoneos/LocalRapPlayer.app"
-          test -d "$APP_PATH"
-          rm -rf Payload LocalRapPlayer_unsigned.ipa
+
+          if [ ! -d "$APP_PATH" ]; then
+            echo "ERROR: App not found at:"
+            echo "$APP_PATH"
+            exit 1
+          fi
+
+          rm -rf Payload
           mkdir Payload
+
           cp -R "$APP_PATH" Payload/
+
           zip -qry LocalRapPlayer_unsigned.ipa Payload
+
+          cp LocalRapPlayer_unsigned.ipa "$GITHUB_WORKSPACE/LocalRapPlayer_unsigned.ipa"
+
+          echo "IPA created:"
+          ls -lh "$GITHUB_WORKSPACE/LocalRapPlayer_unsigned.ipa"
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
-          name: LocalRapPlayer-unsigned-IPA
-          path: LocalRapPlayer_V2/LocalRapPlayer_unsigned.ipa
+          name: LocalRapPlayer-IPA
+          path: LocalRapPlayer_unsigned.ipa
 
-      - name: Upload build log if build fails
+      - name: Upload build log if failed
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: xcodebuild-log
-          path: LocalRapPlayer_V2/xcodebuild.log
+          name: build-log
+          path: |
+            **/xcodebuild.log
           if-no-files-found: ignore
