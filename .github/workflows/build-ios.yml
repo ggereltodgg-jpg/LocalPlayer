@@ -14,28 +14,27 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Show uploaded files
-        run: |
-          echo "Repository files:"
-          find . -maxdepth 4 -type f | sort
-
-      - name: Find project.yml
+      - name: Extract app source
         shell: bash
         run: |
-          SPEC=$(find "$GITHUB_WORKSPACE" -type f -name "project.yml" | head -n 1)
+          mkdir -p extracted
 
-          if [ -z "$SPEC" ]; then
-            echo "ERROR: project.yml not found"
+          unzip -q LocalRapPlayer_V2_GitHub_IPA_Build.zip -d extracted
+
+          echo "Extracted files:"
+          find extracted -maxdepth 3 -type f | head -100
+
+          PROJECT_DIR="$GITHUB_WORKSPACE/extracted/LocalRapPlayer_V2"
+
+          if [ ! -f "$PROJECT_DIR/project.yml" ]; then
+            echo "ERROR: project.yml not found inside ZIP"
             exit 1
           fi
 
-          PROJECT_DIR=$(dirname "$SPEC")
-
-          echo "Found project.yml:"
-          echo "$SPEC"
-
-          echo "Project directory:"
-          echo "$PROJECT_DIR"
+          if [ ! -d "$PROJECT_DIR/LocalRapPlayer" ]; then
+            echo "ERROR: LocalRapPlayer source folder not found"
+            exit 1
+          fi
 
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
 
@@ -46,7 +45,10 @@ jobs:
         shell: bash
         run: |
           cd "$PROJECT_DIR"
+
           xcodegen generate
+
+          echo "Generated project:"
           ls -la
 
       - name: Build unsigned iPhone app
@@ -67,7 +69,7 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             build | tee xcodebuild.log
 
-      - name: Package unsigned IPA
+      - name: Package IPA
         shell: bash
         run: |
           cd "$PROJECT_DIR"
@@ -75,8 +77,7 @@ jobs:
           APP_PATH="build/Build/Products/Release-iphoneos/LocalRapPlayer.app"
 
           if [ ! -d "$APP_PATH" ]; then
-            echo "ERROR: App not found at:"
-            echo "$APP_PATH"
+            echo "ERROR: LocalRapPlayer.app not found"
             exit 1
           fi
 
@@ -87,9 +88,9 @@ jobs:
 
           zip -qry LocalRapPlayer_unsigned.ipa Payload
 
-          cp LocalRapPlayer_unsigned.ipa "$GITHUB_WORKSPACE/LocalRapPlayer_unsigned.ipa"
+          cp LocalRapPlayer_unsigned.ipa \
+            "$GITHUB_WORKSPACE/LocalRapPlayer_unsigned.ipa"
 
-          echo "IPA created:"
           ls -lh "$GITHUB_WORKSPACE/LocalRapPlayer_unsigned.ipa"
 
       - name: Upload IPA
@@ -102,7 +103,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: build-log
+          name: LocalRapPlayer-build-log
           path: |
-            **/xcodebuild.log
+            extracted/LocalRapPlayer_V2/xcodebuild.log
           if-no-files-found: ignore
