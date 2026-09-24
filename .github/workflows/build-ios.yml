@@ -9,6 +9,10 @@ jobs:
   build:
     runs-on: macos-latest
 
+    defaults:
+      run:
+        working-directory: LocalRapPlayer_V2
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -46,4 +50,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: LocalRapPlayer-unsigned-IPA
-          path: LocalRapPlayer_unsigned.ipa
+          path: LocalRapPlayer_V2/LocalRapPlayer_unsigned.ipa
+
+      - name: Upload build log if build fails
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-log
+          path: LocalRapPlayer_V2/xcodebuild.log
+          if-no-files-found: ignore
