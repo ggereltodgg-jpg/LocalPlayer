@@ -1,0 +1,53 @@
+name: LocalRapPlayer
+options:
+  bundleIdPrefix: com.localrapplayer
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: 5.0
+    IPHONEOS_DEPLOYMENT_TARGET: 17.0
+    TARGETED_DEVICE_FAMILY: "1,2"
+targets:
+  LocalRapPlayer:
+    type: application
+    platform: iOS
+    sources:
+      - path: LocalRapPlayer
+        excludes:
+          - Info.plist
+    info:
+      path: LocalRapPlayer/Info.plist
+      properties:
+        CFBundleDisplayName: LocalRapPlayer
+        CFBundleName: LocalRapPlayer
+        CFBundleShortVersionString: "2.0"
+        CFBundleVersion: "1"
+        UILaunchScreen: {}
+        UIBackgroundModes:
+          - audio
+        NSFaceIDUsageDescription: "LocalRapPlayer can use Face ID to unlock the app when App Lock is enabled."
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.localrapplayer.app
+        PRODUCT_NAME: LocalRapPlayer
+        GENERATE_INFOPLIST_FILE: NO
+        SUPPORTS_MACCATALYST: NO
+schemes:
+  LocalRapPlayer:
+    build:
+      targets:
+        LocalRapPlayer: all
+    run:
+      config: Debug
+    archive:
+      config: Release
