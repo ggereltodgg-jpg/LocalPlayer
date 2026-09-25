@@ -19,7 +19,7 @@ jobs:
         run: |
           mkdir -p extracted
 
-          unzip -q LocalRapPlayer_V2_GitHub_IPA_Build_FIXED_V23.zip -d extracted
+         unzip -q LocalRapPlayer_V2_GitHub_IPA_Build_FIXED_V23_seekfix.zip -d extracted
 
           echo "Extracted files:"
           find extracted -maxdepth 3 -type f | head -100
