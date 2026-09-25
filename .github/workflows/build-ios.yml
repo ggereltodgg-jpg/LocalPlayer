@@ -19,22 +19,25 @@ jobs:
         run: |
           mkdir -p extracted
 
-         unzip -q LocalRapPlayer_V2_GitHub_IPA_Build_FIXED_V23_seekfix.zip -d extracted
+          unzip -q LocalRapPlayer_V2_GitHub_IPA_Build_FIXED_V23_seekfix.zip -d extracted
 
           echo "Extracted files:"
-          find extracted -maxdepth 3 -type f | head -100
+          find extracted -maxdepth 4 -type f | head -100
 
-          PROJECT_DIR="$GITHUB_WORKSPACE/extracted/LocalRapPlayer_V2"
+      - name: Find project.yml
+        shell: bash
+        run: |
+          SPEC=$(find "$GITHUB_WORKSPACE/extracted" -type f -name "project.yml" | head -n 1)
 
-          if [ ! -f "$PROJECT_DIR/project.yml" ]; then
-            echo "ERROR: project.yml not found inside ZIP"
+          if [ -z "$SPEC" ]; then
+            echo "ERROR: project.yml not found"
             exit 1
           fi
 
-          if [ ! -d "$PROJECT_DIR/LocalRapPlayer" ]; then
-            echo "ERROR: LocalRapPlayer source folder not found"
-            exit 1
-          fi
+          PROJECT_DIR=$(dirname "$SPEC")
+
+          echo "Project found at:"
+          echo "$PROJECT_DIR"
 
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
 
@@ -45,10 +48,7 @@ jobs:
         shell: bash
         run: |
           cd "$PROJECT_DIR"
-
           xcodegen generate
-
-          echo "Generated project:"
           ls -la
 
       - name: Build unsigned iPhone app
@@ -91,8 +91,6 @@ jobs:
           cp LocalRapPlayer_unsigned.ipa \
             "$GITHUB_WORKSPACE/LocalRapPlayer_unsigned.ipa"
 
-          ls -lh "$GITHUB_WORKSPACE/LocalRapPlayer_unsigned.ipa"
-
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
@@ -105,5 +103,5 @@ jobs:
         with:
           name: LocalRapPlayer-build-log
           path: |
-            extracted/LocalRapPlayer_V2/xcodebuild.log
+            **/xcodebuild.log
           if-no-files-found: ignore
